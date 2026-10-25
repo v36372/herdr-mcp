@@ -1,0 +1,121 @@
+{
+  "ping": {
+    "type": "pong",
+    "version": "0.9.0",
+    "protocol": 22
+  },
+  "session.snapshot": {
+    "type": "session_snapshot",
+    "snapshot": {
+      "version": "0.9.0",
+      "protocol": 22,
+      "workspaces": [],
+      "tabs": [],
+      "panes": [],
+      "layouts": [],
+      "agents": []
+    }
+  },
+  "workspace.list": {
+    "type": "workspace_list",
+    "workspaces": []
+  },
+  "tab.list": {
+    "type": "tab_list",
+    "tabs": []
+  },
+  "pane.list": {
+    "type": "pane_list",
+    "panes": []
+  },
+  "pane.read": {
+    "type": "pane_read",
+    "read": {
+      "pane_id": "fixture",
+      "workspace_id": "fixture",
+      "tab_id": "fixture",
+      "source": "visible",
+      "format": "text",
+      "text": "fixture",
+      "revision": 0,
+      "truncated": false
+    }
+  },
+  "agent.list": {
+    "type": "agent_list",
+    "agents": []
+  },
+  "agent.wait": {
+    "type": "agent_info",
+    "agent": {
+      "terminal_id": "fixture",
+      "agent_status": "idle",
+      "workspace_id": "fixture",
+      "tab_id": "fixture",
+      "pane_id": "fixture",
+      "focused": false,
+      "revision": 0
+    }
+  },
+  "workspace.create": {
+    "type": "workspace_created",
+    "workspace": {
+      "workspace_id": "fixture",
+      "number": 0,
+      "label": "fixture",
+      "focused": false,
+      "pane_count": 0,
+      "tab_count": 0,
+      "active_tab_id": "fixture",
+      "agent_status": "idle"
+    },
+    "tab": {
+      "tab_id": "fixture",
+      "workspace_id": "fixture",
+      "number": 0,
+      "label": "fixture",
+      "focused": false,
+      "pane_count": 0,
+      "agent_status": "idle"
+    },
+    "root_pane": {
+      "pane_id": "fixture",
+      "terminal_id": "fixture",
+      "workspace_id": "fixture",
+      "tab_id": "fixture",
+      "focused": false,
+      "agent_status": "idle",
+      "revision": 0
+    }
+  },
+  "pane.split": {
+    "type": "pane_info",
+    "pane": {
+      "pane_id": "fixture",
+      "terminal_id": "fixture",
+      "workspace_id": "fixture",
+      "tab_id": "fixture",
+      "focused": false,
+      "agent_status": "idle",
+      "revision": 0
+    }
+  },
+  "pane.send_text": {
+    "type": "ok"
+  },
+  "pane.send_keys": {
+    "type": "ok"
+  },
+  "agent.prompt": {
+    "type": "agent_prompted",
+    "agent": {
+      "terminal_id": "fixture",
+      "agent_status": "idle",
+      "workspace_id": "fixture",
+      "tab_id": "fixture",
+      "pane_id": "fixture",
+      "focused": false,
+      "revision": 0
+    }
+  }
+}

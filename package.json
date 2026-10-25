@@ -1,0 +1,25 @@
+{
+  "name": "herdr-sdk-mcp",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Local stdio MCP server for Herdr, built on @herdr/sdk.",
+  "bin": { "herdr-sdk-mcp": "dist/src/cli.js" },
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "build": "tsc",
+    "check": "tsc --noEmit",
+    "start": "node dist/src/cli.js",
+    "test": "npm run build && node --test dist/test/*.test.js"
+  },
+  "dependencies": {
+    "@herdr/sdk": "file:vendor/herdr-sdk-0.9.0.tgz",
+    "@modelcontextprotocol/sdk": "1.32.2",
+    "effect": "4.0.0-beta.105",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "26.1.1",
+    "typescript": "7.0.2"
+  }
+}
