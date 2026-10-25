@@ -1,0 +1,21 @@
+[Unit]
+Description=Dedicated Herdr MCP session
+After=network.target
+
+[Service]
+Type=simple
+User=exedev
+Group=exedev
+WorkingDirectory=/home/exedev/codes
+Environment=HOME=/home/exedev
+Environment=PATH=/home/exedev/.local/bin:/usr/local/bin:/usr/bin:/bin
+Environment=TERM=xterm-256color
+ExecStart=/home/exedev/.local/bin/herdr --session mcp-agent server
+Restart=on-failure
+RestartSec=3
+TimeoutStopSec=30
+NoNewPrivileges=true
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target

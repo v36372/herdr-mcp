@@ -9,6 +9,8 @@ import { fileURLToPath } from "node:url";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
+import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
+import { createHerdrHttpServer } from "../src/http.js";
 import { z } from "zod";
 import { Duration } from "effect";
 import fixtures from "./fixtures.json" with { type: "json" };
@@ -23,6 +25,7 @@ async function setup(t: TestContext, options: {
   protocol?: number;
   timeout?: number;
   stdio?: "flags" | "environment";
+  http?: boolean;
   respond?: (request: Request, socket: Socket) => unknown;
 } = {}) {
   const directory = await mkdtemp(join(tmpdir(), "hmcp-"));
@@ -59,7 +62,11 @@ async function setup(t: TestContext, options: {
       }
     });
   });
-  const app = createHerdrServer({ config: { socketPath, requestTimeout: Duration.millis(options.timeout ?? 1000) }, allowWrites: options.allowWrites });
+  const config = { socketPath, requestTimeout: Duration.millis(options.timeout ?? 1000) };
+  const app = options.http
+    ? createHerdrHttpServer({ config, allowWrites: options.allowWrites, allowedPeer: "v36372-executor" })
+    : createHerdrServer({ config, allowWrites: options.allowWrites });
+  let httpUrl: URL | undefined;
   const client = new Client({ name: "test", version: "1.0.0" });
   t.after(async () => {
     await client.close();
@@ -71,7 +78,16 @@ async function setup(t: TestContext, options: {
   });
   fixture.listen(socketPath);
   await once(fixture, "listening", { signal: AbortSignal.timeout(2000) });
-  if (options.stdio) {
+  if ("listen" in app.server) {
+    app.server.listen(0, "127.0.0.1");
+    await once(app.server, "listening", { signal: AbortSignal.timeout(2000) });
+    const address = app.server.address();
+    assert.ok(address && typeof address !== "string");
+    httpUrl = new URL(`http://127.0.0.1:${address.port}/mcp`);
+    await client.connect(new StreamableHTTPClientTransport(httpUrl, {
+      requestInit: { headers: { "X-Exedev-Source-Vm": "v36372-executor" } },
+    }));
+  } else if (options.stdio) {
     const transport = new StdioClientTransport({
       command: process.execPath,
       args: [fileURLToPath(new URL("../src/cli.js", import.meta.url)),
@@ -90,7 +106,7 @@ async function setup(t: TestContext, options: {
     await client.connect(clientTransport);
   }
   return {
-    client, requests, app,
+    client, requests, app, httpUrl,
     async waitForRequest(method: string) {
       while (!requests.some((request) => request.method === method)) {
         await once(events, "request", { signal: AbortSignal.timeout(2000) });
@@ -215,13 +231,49 @@ test("a lost mutation response times out without automatic retry and closes the 
   await waitForClose();
 });
 
-test("MCP cancellation interrupts a pending SDK wait and releases its socket", { timeout: 5000 }, async (t) => {
-  const { client, waitForRequest, waitForClose } = await setup(t, { respond: () => undefined });
+for (const http of [false, true]) {
+  test(`${http ? "HTTP" : "In-memory"} cancellation interrupts a pending SDK wait and releases its socket`, { timeout: 5000 }, async (t) => {
+  const { client, waitForRequest, waitForClose } = await setup(t, { http, respond: () => undefined });
   const controller = new AbortController();
   const pending = client.callTool({ name: "herdr_agent_wait", arguments: { paneId: "p", timeoutMs: 90_000 } }, undefined, { signal: controller.signal });
   const rejected = assert.rejects(pending);
   await waitForRequest("agent.wait");
   controller.abort();
+  await rejected;
+  await waitForClose();
+  });
+}
+
+test("HTTP requires the attested peer and refuses browser origins before socket acquisition", { timeout: 5000 }, async (t) => {
+  const { client, httpUrl, requests } = await setup(t, { http: true });
+  assert.equal((await client.listTools()).tools.length, 8);
+  assert.ok(httpUrl);
+  const invalidHeaders: Record<string, string>[] = [{}, { "X-Exedev-Source-Vm": "other-vm" }, { "X-Exedev-Source-Vm": "v36372-executor", Origin: "https://untrusted.example" }];
+  for (const headers of invalidHeaders) {
+    assert.equal((await fetch(httpUrl, { method: "POST", headers, body: "{}" })).status, 403);
+  }
+  const headers = { "X-Exedev-Source-Vm": "v36372-executor" };
+  assert.equal((await fetch(httpUrl, { headers })).status, 405);
+  assert.equal((await fetch(new URL("/unknown", httpUrl), { headers })).status, 404);
+  assert.equal((await fetch(new URL("/healthz", httpUrl), { headers })).status, 200);
+  assert.equal((await fetch(httpUrl, { method: "POST", headers: { ...headers, "Content-Type": "application/json", Accept: "application/json, text/event-stream" }, body: JSON.stringify({ padding: "x".repeat(300_000) }) })).status, 413);
+  assert.deepEqual(requests, []);
+});
+
+test("HTTP exposes SDK tools and sends one explicit mutation without retry", { timeout: 5000 }, async (t) => {
+  const { client, requests } = await setup(t, { http: true, allowWrites: true });
+  assert.equal((await client.listTools()).tools.length, 13);
+  const result = await client.callTool({ name: "herdr_pane_send_text", arguments: { paneId: "p", text: "hello" } });
+  assert.notEqual(result.isError, true, text(result));
+  assert.equal(requests.filter((request) => request.method === "pane.send_text").length, 1);
+});
+
+test("HTTP service shutdown releases an active SDK request", { timeout: 5000 }, async (t) => {
+  const { client, app, waitForRequest, waitForClose } = await setup(t, { http: true, respond: () => undefined });
+  const pending = client.callTool({ name: "herdr_agent_wait", arguments: { paneId: "p", timeoutMs: 90_000 } });
+  const rejected = assert.rejects(pending);
+  await waitForRequest("agent.wait");
+  await app.close();
   await rejected;
   await waitForClose();
 });

@@ -42,7 +42,8 @@ If neither selector appears, the SDK uses `HERDR_SOCKET_PATH`, `HERDR_SESSION`, 
 The SDK selects one configuration and shares one compatibility check across ordinary requests.
 
 Read-only mode exposes eight tools. Add `--allow-writes` to the argument array to expose five mutation tools.
-The process opens no HTTP port. Stdout contains only MCP messages during normal operation.
+Default stdio mode opens no HTTP port. Stdout contains only MCP messages during normal operation.
+For private remote access through Executor, use the [systemd deployment](deploy/README.md).
 
 ## Tools
 
@@ -80,7 +81,8 @@ An explicit server `wait_timeout` code remains available to distinguish an expir
 5. If a timeout or disconnect occurs, inspect state before any retry. The remote mutation outcome can remain uncertain.
 
 A successful send confirms delivery only. This server never retries mutations automatically.
-MCP cancellation, client disconnects, stdin closure, and termination signals release SDK resources.
+MCP cancellation, interrupted HTTP responses, stdin closure, and termination signals release SDK resources.
+HTTP sessions expire after two idle minutes. At most 64 sessions coexist.
 A client can impose a deadline shorter than the 90-second wait limit.
 
 ## Security and limits
@@ -88,8 +90,10 @@ A client can impose a deadline shorter than the 90-second wait limit.
 WARNING: `--allow-writes` grants shell-equivalent access through terminal input. Use a dedicated Herdr session or OS account.
 Read-only access can expose terminal secrets. MCP annotations describe behavior. They do not create a sandbox.
 
-This first version excludes HTTP transport, authentication, arbitrary SDK dispatch, graphics, continuous event subscriptions, and destructive close tools.
-It does not install, launch, or configure Herdr itself. No live-session test forms part of verification.
+HTTP mode requires exe.dev peer authentication through its private HTTPS proxy. It binds only to loopback and rejects browser origins.
+Never expose that listener directly or trust identity headers from another proxy.
+Arbitrary SDK dispatch, graphics, continuous event subscriptions, and destructive close tools remain outside this version.
+The deployment units start a dedicated Herdr session. No live-session test forms part of verification.
 
 ## SDK source
 
