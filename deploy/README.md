@@ -51,7 +51,7 @@ Anyone with execution access on that VM can use the integration.
    sudo systemctl reload nginx
    ```
 
-5. Add the peer integration, then import its MCP URL as a separate Executor app named `Herdr SDK`.
+5. Add the peer integration, then deploy `deploy/executor/` as a separate Executor app named `Herdr SDK`.
 
    ```sh
    # Run through the exe.dev management interface:
@@ -59,7 +59,13 @@ Anyone with execution access on that VM can use the integration.
    ```
 
 Keep the existing `herdr` Executor app unchanged. The new app uses slug `herdr-sdk`.
-Quick Add imports the eight read-only tools. A tool import does not call Herdr.
+The source pins Executor's installed `apps@0.0.1-beta.95` framework and imports eight read-only tools through `mcpRouter`.
+It requires approval for any future tool without a read-only hint. Tool discovery does not call Herdr.
+Use source deployment to route discovery through the app runtime, rather than Quick Add's separate endpoint probe.
+
+Installed app: `app_8d577426-3660-4202-b825-da049254e628` in organization `IWiWEyVV4RN5tdxbhig8EUkJ9PhwpjRF`.
+Its MCP namespace is `tools["herdr-sdk"]`. No provider account or credential is necessary.
+The instance already permits private app fetches through `EXECUTOR_APPS_ALLOW_PRIVATE_FETCH=true`.
 
 ## Verification and maintenance
 
@@ -69,6 +75,7 @@ systemctl is-enabled herdr-agent.service herdr-mcp.service
 curl -fsS -H 'X-Exedev-Source-Vm: v36372-executor' http://127.0.0.1:8788/healthz
 ```
 
+If `/healthz` refuses the connection immediately after startup, wait two seconds and repeat that read-only check.
 The local identity header above checks process readiness only. It does not prove remote authentication.
 Check the peer route from Executor with MCP initialization and tool discovery, not terminal mutations.
 `/healthz` reports HTTP readiness, not Herdr socket health. Production tool calls do not form part of the test suite.
