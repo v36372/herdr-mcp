@@ -1,7 +1,8 @@
 # Private deployment on v36372-agent
 
 Use `herdr-mcp.service` for the MCP server and `herdr-agent.service` for the dedicated `mcp-agent` session.
-Both run as `exedev`. MCP listens on `127.0.0.1:8788` with read-only tools.
+Both run as `exedev`. MCP listens on `127.0.0.1:8788` with all 13 tools after explicit owner authorization.
+Standalone CLI use remains read-only unless `--allow-writes` appears.
 The existing Durable Agent service keeps its root route and port 8787.
 
 ## Authentication
@@ -58,9 +59,10 @@ Anyone with execution access on that VM can use the integration.
    integrations add http-proxy --name herdr-agent --target https://v36372-agent.exe.xyz/ --peer --attach vm:v36372-executor
    ```
 
-Keep the existing `herdr` Executor app unchanged. The new app uses slug `herdr-sdk`.
-The source pins Executor's installed `apps@0.0.1-beta.95` framework and imports eight read-only tools through `mcpRouter`.
-It requires approval for any future tool without a read-only hint. Tool discovery does not call Herdr.
+The app uses slug `herdr-sdk`. The old CLI-based `herdr` app is removed.
+The source pins Executor's installed `apps@0.0.1-beta.95` framework and imports eight read tools plus five write tools through `mcpRouter`.
+Every write tool requires approval. Tool discovery does not call Herdr.
+Use the [scoped profiles](profiles/README.md) to separate control access from read-only access.
 Use source deployment to route discovery through the app runtime, rather than Quick Add's separate endpoint probe.
 
 Installed app: `app_8d577426-3660-4202-b825-da049254e628` in organization `IWiWEyVV4RN5tdxbhig8EUkJ9PhwpjRF`.
@@ -86,4 +88,5 @@ Do not restart Herdr for an MCP update. A Herdr restart can terminate its termin
 MCP request bodies have a 256 KiB limit. Sessions expire after two idle minutes and share one SDK runtime each.
 The server permits at most 64 sessions. MCP cancellation stays within its session and never retries a mutation.
 
-WARNING: Add `--allow-writes` only after explicit authorization. It grants shell-equivalent access to Executor callers.
+WARNING: The service enables `--allow-writes` with explicit owner authorization. Executor requires approval for each mutation.
+An unscoped owner PAT retains broad access. Use a scoped OAuth connection for read-only callers.

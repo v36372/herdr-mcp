@@ -10,7 +10,7 @@ Group=exedev
 WorkingDirectory=/home/exedev/codes/herdr-mcp
 Environment=HOME=/home/exedev
 ExecStartPre=/usr/bin/test -S /home/exedev/.config/herdr/sessions/mcp-agent/herdr.sock
-ExecStart=/usr/local/bin/node /home/exedev/codes/herdr-mcp/dist/src/cli.js --session mcp-agent --http-port 8788 --allowed-peer v36372-executor
+ExecStart=/usr/local/bin/node /home/exedev/codes/herdr-mcp/dist/src/cli.js --session mcp-agent --http-port 8788 --allowed-peer v36372-executor --allow-writes
 Restart=on-failure
 RestartSec=3
 TimeoutStopSec=15

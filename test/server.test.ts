@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { EventEmitter, once } from "node:events";
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { createServer, type Socket } from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -148,6 +148,29 @@ test("read-only discovery opens no sockets and does not expose mutation handlers
   assert.ok(list.tools.every((tool) => tool.annotations?.readOnlyHint === true));
   const denied = await client.callTool({ name: "herdr_pane_send_text", arguments: { paneId: "p", text: "x" } });
   assert.equal(denied.isError, true);
+  assert.deepEqual(requests, []);
+});
+
+test("scoped profile definitions allow exactly the intended tools and no events", { timeout: 5000 }, async (t) => {
+  const { client, requests } = await setup(t, { allowWrites: true });
+  const tools = (await client.listTools()).tools;
+  const schema = z.strictObject({
+    id: z.string(), name: z.string(),
+    apps: z.array(z.strictObject({
+      app: z.literal("app_8d577426-3660-4202-b825-da049254e628"),
+      runsAs: z.tuple([z.strictObject({ kind: z.literal("app") })]),
+      tools: z.strictObject({ kind: z.literal("selected"), names: z.array(z.string()) }),
+      events: z.strictObject({ kind: z.literal("selected"), names: z.tuple([]) }),
+    })).length(1),
+  });
+  for (const [id, readOnly] of [["herdr-read-only", true], ["herdr-control", false]] as const) {
+    const profile = schema.parse(JSON.parse(await readFile(join(process.cwd(), "deploy/profiles", `${id}.json`), "utf8")));
+    assert.equal(profile.id, id);
+    const names = profile.apps[0].tools.names;
+    const expected = tools.filter((tool) => !readOnly || tool.annotations?.readOnlyHint === true).map((tool) => tool.name);
+    assert.deepEqual([...names].sort(), expected.sort());
+    assert.equal(new Set(names).size, names.length);
+  }
   assert.deepEqual(requests, []);
 });
 

@@ -1,0 +1,36 @@
+{
+  "id": "herdr-control",
+  "name": "Herdr Control",
+  "apps": [
+    {
+      "app": "app_8d577426-3660-4202-b825-da049254e628",
+      "runsAs": [
+        {
+          "kind": "app"
+        }
+      ],
+      "tools": {
+        "kind": "selected",
+        "names": [
+          "herdr_ping",
+          "herdr_session_snapshot",
+          "herdr_workspace_list",
+          "herdr_tab_list",
+          "herdr_pane_list",
+          "herdr_pane_read",
+          "herdr_agent_list",
+          "herdr_agent_wait",
+          "herdr_workspace_create",
+          "herdr_pane_split",
+          "herdr_pane_send_text",
+          "herdr_pane_send_keys",
+          "herdr_agent_prompt"
+        ]
+      },
+      "events": {
+        "kind": "selected",
+        "names": []
+      }
+    }
+  ]
+}
